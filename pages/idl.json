@@ -1,0 +1,139 @@
+{
+  "version": "0.1.0",
+  "name": "tic_tac_toe",
+  "instructions": [
+    {
+      "name": "startGame",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "joinGame",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setValue",
+      "accounts": [
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "index",
+          "type": "u8"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Game",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "state",
+            "type": {
+              "array": [
+                "i8",
+                9
+              ]
+            }
+          },
+          {
+            "name": "firstPlayer",
+            "type": "publicKey"
+          },
+          {
+            "name": "secondPlayer",
+            "type": "publicKey"
+          },
+          {
+            "name": "xPlayer",
+            "type": "publicKey"
+          },
+          {
+            "name": "winner",
+            "type": "publicKey"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "SecondPlayerSameAsFirst",
+      "msg": "Second Player must be different from the first player"
+    },
+    {
+      "code": 6001,
+      "name": "SecondPlayerAlreadyJoined",
+      "msg": "Cannot join when there is already a second player"
+    },
+    {
+      "code": 6002,
+      "name": "WrongPlayer",
+      "msg": "Only users taking part in the game can make a move"
+    },
+    {
+      "code": 6003,
+      "name": "SecondPlayerNotJoined",
+      "msg": "Second player has not joined the game"
+    },
+    {
+      "code": 6004,
+      "name": "CannotOverrideValue",
+      "msg": "Cannot Override a previously set value"
+    },
+    {
+      "code": 6005,
+      "name": "WrongOrder",
+      "msg": "Another player is supposed to set value"
+    },
+    {
+      "code": 6006,
+      "name": "GameIsOver",
+      "msg": "Game is over"
+    }
+  ],
+  "metadata": {
+    "address": "4Y5g1y7JXb2hpHDWsGQTAhHKbSJtR95W6QGzoXgESN8U"
+  }
+}

@@ -1,0 +1,26 @@
+.profilesRow {
+    display: flex;
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+.firstPlayer {
+    width: 33%;
+    text-align: left;
+}
+
+.winner {
+    width: 34%;
+    flex-grow: 1;
+    text-align: center;
+}
+
+.secondPlayer {
+    flex-grow: 2;
+    text-align: right;
+}
+
+.makeMove {
+    font-size: 16px;
+    margin-bottom: 10px;
+}
