@@ -1,14 +1,48 @@
 import React, { useEffect, useState } from 'react';
 import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
-import { Program, web3 } from '@project-serum/anchor';
+import { AnchorProvider, Program, web3 } from '@project-serum/anchor';
 
 import idl from './idl.json';
 import { useRouter } from "next/router";
-import { checkIfWalletIsConnected, getProvider, shortAddress } from "./util";
 import styles from "./index.module.css";
 
 const { SystemProgram } = web3;
 const programID = new PublicKey(idl.metadata.address);
+
+const checkIfWalletIsConnected = async (setWalletAddress: (addr: string) => void) => {
+    try {
+        const { solana } = window;
+        if (solana) {
+            if (solana.isPhantom) {
+                console.log('Phantom wallet found!');
+                const response = await solana.connect({ onlyIfTrusted: true });
+                console.log(
+                    'Connected with Public Key:',
+                    response.publicKey.toString()
+                );
+                setWalletAddress(response.publicKey.toString());
+            }
+        } else {
+            alert('Solana object not found! Get a Phantom Wallet 👻');
+        }
+    } catch (error) {
+        console.error(error);
+    }
+};
+
+const shortAddress = (address: string) => {
+    const prefix = address.slice(0, 4);
+    const suffix = address.slice(address.length - 4, address.length);
+    return `${prefix}...${suffix}`;
+}
+
+const getProvider = () => {
+    const network = clusterApiUrl('devnet');
+    const connection = new Connection(network, "processed");
+    return new AnchorProvider(
+        connection, window.solana, { preflightCommitment: "processed" },
+    );
+}
 
 const Home = () => {
     const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
