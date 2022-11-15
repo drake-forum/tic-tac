@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
+import { clusterApiUrl, Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { AnchorProvider, Program, web3 } from '@project-serum/anchor';
 
 import idl from './idl.json';
@@ -37,10 +37,12 @@ const shortAddress = (address: string) => {
 }
 
 const getProvider = () => {
+    const { solana } = window;
     const network = clusterApiUrl('devnet');
     const connection = new Connection(network, "processed");
+    const wallet = window.solana ?? Keypair.generate();
     return new AnchorProvider(
-        connection, window.solana, { preflightCommitment: "processed" },
+        connection, wallet, { preflightCommitment: "processed" },
     );
 }
 
@@ -58,6 +60,7 @@ const Home = () => {
     const [ xPlayer, setXPlayer ] = useState<string>("");
     const [ winner, setWinner ] = useState<string>("");
     const [ state, setState ] = useState<number[]>([ -1, -1, -1, -1, -1, -1, -1, -1, -1 ])
+    const [ loading, setLoading ] = useState<boolean>(false)
 
     const connectWallet = async () => {
         const { solana } = window;
@@ -74,6 +77,7 @@ const Home = () => {
             const program = new Program<any>(idl, programID, provider);
             const game = web3.Keypair.generate();
             console.log("starting game...")
+            setLoading(true)
             await program.methods.startGame()
                 .accounts({
                     game: game.publicKey,
@@ -134,6 +138,7 @@ const Home = () => {
             const provider = getProvider();
             const program = new Program<any>(idl, programID, provider);
             console.log("joining game...")
+            setLoading(true)
             await program.methods.joinGame().accounts({
                 game: new PublicKey(game),
                 user: new PublicKey(walletAddress),
@@ -175,13 +180,17 @@ const Home = () => {
             console.log('xPlayer', account.xPlayer.toBase58())
         } catch (error) {
             console.error(error);
+        } finally {
+            setLoading(false)
         }
     };
 
     useEffect(() => {
         const onLoad = async () => {
+            setLoading(true)
             await checkIfWalletIsConnected(setWalletAddress);
             await loadState()
+            setLoading(false)
         };
         window.addEventListener('load', onLoad);
         return () => window.removeEventListener('load', onLoad);
@@ -189,7 +198,9 @@ const Home = () => {
 
     useEffect(() => {
         if(!router.isReady || !router.query.game) return;
+        setLoading(true)
         loadState()
+        setLoading(false)
         const gamePublicKey = new PublicKey(router.query.game);
         connection.onAccountChange(
             gamePublicKey,
@@ -206,6 +217,7 @@ const Home = () => {
     }, [router.isReady, router.query.game]);
 
     const renderFirstPlayer = () => <div>🐯 {shortAddress(firstPlayer)} {firstPlayer === walletAddress && <>(You)</>} </div>
+
     const renderSecondPlayer = () => {
         if (secondPlayer === defaultPubkey) {
             if (walletAddress  && walletAddress !== firstPlayer) {
@@ -228,6 +240,7 @@ const Home = () => {
         const provider = getProvider();
         const program = new Program<any>(idl, programID, provider);
         console.log("making a move...")
+        setLoading(true)
         await program.methods.setValue(i)
             .accounts({
                 game: new PublicKey(game),
@@ -260,6 +273,8 @@ const Home = () => {
 
     const readyToMakeMove = () => walletAddress && secondPlayer !== defaultPubkey
 
+    const renderLoading = () => <div><div className={styles.ldsRing}><div></div><div></div><div></div><div></div></div></div>
+
     if (!game) {
         return (
             <>
@@ -267,6 +282,7 @@ const Home = () => {
                 <p className="sub-text">Now on the Solana blockchain ✨</p>
                 {!walletAddress && renderNotConnectedContainer()}
                 {walletAddress && renderConnectedContainer()}
+                {loading && renderLoading()}
             </>
         );
     }
@@ -287,7 +303,7 @@ const Home = () => {
                     {firstPlayer && renderSecondPlayer()}
                 </div>
             </div>
-            {!walletAddress && renderNotConnectedContainer()}
+            {!walletAddress &&!loading && renderNotConnectedContainer()}
             {readyToMakeMove() && xPlayer === defaultPubkey && <div className={styles.makeMove}>Make a first move yourself or wait for another player</div> }
             <div className="game">
                 <div className="game-board">
@@ -310,6 +326,7 @@ const Home = () => {
                     </div>
                 </div>
             </div>
+            {loading && renderLoading()}
         </>
     );
 }
