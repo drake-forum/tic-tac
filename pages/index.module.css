@@ -67,3 +67,12 @@
         transform: rotate(360deg);
     }
 }
+
+.externalLink:link {
+    color: #4e44ce;
+    font-weight: bold;
+}
+
+.externalLink:hover {
+    text-decoration: underline;
+}

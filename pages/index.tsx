@@ -9,27 +9,6 @@ import styles from "./index.module.css";
 const { SystemProgram } = web3;
 const programID = new PublicKey(idl.metadata.address);
 
-const checkIfWalletIsConnected = async (setWalletAddress: (addr: string) => void) => {
-    try {
-        const { solana } = window;
-        if (solana) {
-            if (solana.isPhantom) {
-                console.log('Phantom wallet found!');
-                const response = await solana.connect({ onlyIfTrusted: true });
-                console.log(
-                    'Connected with Public Key:',
-                    response.publicKey.toString()
-                );
-                setWalletAddress(response.publicKey.toString());
-            }
-        } else {
-            alert('Solana object not found! Get a Phantom Wallet 👻');
-        }
-    } catch (error) {
-        console.error(error);
-    }
-};
-
 const shortAddress = (address: string) => {
     const prefix = address.slice(0, 4);
     const suffix = address.slice(address.length - 4, address.length);
@@ -61,6 +40,31 @@ const Home = () => {
     const [ winner, setWinner ] = useState<string>("");
     const [ state, setState ] = useState<number[]>([ -1, -1, -1, -1, -1, -1, -1, -1, -1 ])
     const [ loading, setLoading ] = useState<boolean>(false)
+    const [phantomInstalled, setPhantomInstalled] = useState<boolean>(true)
+
+    const checkIfWalletIsConnected = async () => {
+        console.log('checkIfWalletIsConnected');
+        try {
+            const { solana } = window;
+            if (solana) {
+                if (solana.isPhantom) {
+                    setPhantomInstalled(true)
+                    console.log('Phantom wallet found!');
+                    const response = await solana.connect({ onlyIfTrusted: true });
+                    console.log(
+                        'Connected with Public Key:',
+                        response.publicKey.toString()
+                    );
+                    setWalletAddress(response.publicKey.toString());
+                }
+            } else {
+                console.log('Phantom wallet not found!');
+                setPhantomInstalled(false)
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     const connectWallet = async () => {
         const { solana } = window;
@@ -107,20 +111,15 @@ const Home = () => {
         )
     }
 
-    useEffect(() => {
-        if (walletAddress) {
-            console.log('Wallet changes...');
-        }
-    }, [ walletAddress ]);
-
-    useEffect(() => {
-        const onLoad = async () => {
-            await checkIfWalletIsConnected(setWalletAddress);
-        };
-        window.addEventListener('load', onLoad);
-        return () => window.removeEventListener('load', onLoad);
-    }, []);
-
+    const renderInstallPhantomMessage = () => {
+        return (
+            <div className="connected-container">
+                To play the game, install <a className={styles.externalLink} href="https://phantom.app">Phantom Wallet</a>,
+                configure it to use Devnet, and <a className={styles.externalLink} href="https://solfaucet.com">send</a> some
+                Devnet SOL to your wallet.
+            </div>
+        )
+    }
 
     const nextPlayer = () => {
         const squaresLeft = state.filter((val) => val === -1).length
@@ -155,12 +154,6 @@ const Home = () => {
         </button>
     );
 
-    useEffect(() => {
-        if (walletAddress) {
-            console.log('Wallet changes...');
-        }
-    }, [ walletAddress ]);
-
     const loadState = async () => {
         try {
             const provider = getProvider()
@@ -186,15 +179,10 @@ const Home = () => {
     };
 
     useEffect(() => {
-        const onLoad = async () => {
-            setLoading(true)
-            await checkIfWalletIsConnected(setWalletAddress);
-            await loadState()
-            setLoading(false)
-        };
-        window.addEventListener('load', onLoad);
-        return () => window.removeEventListener('load', onLoad);
-    }, []);
+        checkIfWalletIsConnected();
+    }
+
+    ,[])
 
     useEffect(() => {
         if(!router.isReady || !router.query.game) return;
@@ -275,17 +263,16 @@ const Home = () => {
 
     const renderLoading = () => <div><div className={styles.ldsRing}><div></div><div></div><div></div><div></div></div></div>
 
-    if (!game) {
-        return (
-            <>
-                <p className="header">🦄 Tic Tac Toe</p>
-                <p className="sub-text">Now on the Solana blockchain ✨</p>
-                {!walletAddress && renderNotConnectedContainer()}
-                {walletAddress && renderConnectedContainer()}
-                {loading && renderLoading()}
-            </>
-        );
-    }
+    if (!game) return (
+        <>
+            <p className="header">🦄 Tic Tac Toe</p>
+            <p className="sub-text">Now on the Solana blockchain ✨</p>
+            {!walletAddress && phantomInstalled && renderNotConnectedContainer()}
+            {walletAddress && phantomInstalled && renderConnectedContainer()}
+            {!phantomInstalled && renderInstallPhantomMessage()}
+            {loading && renderLoading()}
+        </>
+    );
 
     return (
         <>
@@ -303,7 +290,7 @@ const Home = () => {
                     {firstPlayer && renderSecondPlayer()}
                 </div>
             </div>
-            {!walletAddress &&!loading && renderNotConnectedContainer()}
+            {phantomInstalled && !walletAddress &&!loading && renderNotConnectedContainer()}
             {readyToMakeMove() && xPlayer === defaultPubkey && <div className={styles.makeMove}>Make a first move yourself or wait for another player</div> }
             <div className="game">
                 <div className="game-board">
@@ -326,6 +313,7 @@ const Home = () => {
                     </div>
                 </div>
             </div>
+            {!phantomInstalled && renderInstallPhantomMessage()}
             {loading && renderLoading()}
         </>
     );
